@@ -1,0 +1,57 @@
+import os
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage.feature import hog
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+
+
+def load_images_from_folder(folder, label, image_size=(128, 128)):
+    data = []
+    labels = []
+    
+    for filename in os.listdir(folder):
+        img_path = os.path.join(folder, filename)
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  # Convert to grayscale
+        if img is not None:
+            img = cv2.resize(img, image_size)  # Resize for consistency
+            img = cv2.GaussianBlur(img, (5, 5), 0)  # Reduce noise
+            edges = cv2.Canny(img, 50, 150)  # Edge detection
+            hog_features = hog(edges, orientations=9, pixels_per_cell=(8, 8), 
+                               cells_per_block=(2, 2), visualize=False)  # HOG extraction
+            data.append(hog_features)
+            labels.append(label)
+    
+    return np.array(data), np.array(labels)
+
+spiral_PD, label_spiral_PD = load_images_from_folder("spirals_PD", label=1)
+spiral_HC, label_spiral_HC = load_images_from_folder("spirals_Healthy", label=0)
+wave_PD, label_wave_PD = load_images_from_folder("waves_PD", label=1)
+wave_HC, label_wave_HC = load_images_from_folder("waves_Healthy", label=0)
+
+X_spiral = np.vstack((spiral_PD, spiral_HC))
+y_spiral = np.hstack((label_spiral_PD, label_spiral_HC))
+
+X_wave = np.vstack((wave_PD, wave_HC))
+y_wave = np.hstack((label_wave_PD, label_wave_HC))
+
+X_train_spiral, X_test_spiral, y_train_spiral, y_test_spiral = train_test_split(X_spiral, y_spiral, test_size=0.2, random_state=42)
+X_train_wave, X_test_wave, y_train_wave, y_test_wave = train_test_split(X_wave, y_wave, test_size=0.2, random_state=42)
+
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train_spiral, y_train_spiral)
+
+knn_model = KNeighborsClassifier(n_neighbors=5)
+knn_model.fit(X_train_wave, y_train_wave)
+
+y_pred_spiral = rf_model.predict(X_test_spiral)
+y_pred_wave = knn_model.predict(X_test_wave)
+
+spiral_acc = accuracy_score(y_test_spiral, y_pred_spiral)
+wave_acc = accuracy_score(y_test_wave, y_pred_wave)
+
+print(f"Spiral Classification Accuracy (Random Forest): {spiral_acc * 100:.2f}%")
+print(f"Wave Classification Accuracy (KNN): {wave_acc * 100:.2f}%")
