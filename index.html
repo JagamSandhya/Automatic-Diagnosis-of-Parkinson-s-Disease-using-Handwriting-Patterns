@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parkinson’s Diagnosis</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        form { margin-top: 20px; }
+        img { width: 300px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Parkinson’s Disease Detection</h1>
+    <form action="/predict" method="post" enctype="multipart/form-data">
+        <label>Select Image Type:</label>
+        <select name="category">
+            <option value="spiral">Spiral</option>
+            <option value="wave">Wave</option>
+        </select><br><br>
+        <input type="file" name="file" required>
+        <button type="submit">Predict</button>
+    </form>
+    
+    {% if prediction %}
+        <h2>Prediction: {{ prediction }}</h2>
+        <img src="{{ image_path }}" alt="Uploaded Image">
+    {% endif %}
+</body>
+</html>
